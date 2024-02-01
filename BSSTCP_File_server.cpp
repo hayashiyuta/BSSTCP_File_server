@@ -14,6 +14,7 @@ const unsigned int MESSAGELENGTH = 1024;
 
 // リスンソケット ... クラス化してメンバー変数にしたいなー
 int listenSock;
+int fd;
 
 // クライアントとの通信用ソケットvector ... クラス化してメンバー変数にしたいなー
 std::vector<int> socks;	// 靴下っぽい
@@ -56,6 +57,8 @@ int main()
     }
     std::cout << "Success: Listen()" << std::endl;
 
+    
+
     while (true)
     {
         int ret = Accept();
@@ -72,13 +75,14 @@ int main()
         for (auto sock : socks)
         {
             char buff[MESSAGELENGTH];
+            memset(buff, 0, sizeof(buff));
             
             ret = Recv(sock, buff);
             
-            if (ret == 0)
+            if (ret < 0)
             {
                 
-                //std::cout << "buff = " << buff << std::endl;
+                std::cout << "buff = " << buff << std::endl;
             }
             else if (ret != WSAEWOULDBLOCK)
             {
@@ -178,8 +182,8 @@ int Recv(int sock, char* buff)
     {
         receivedfile.write(buff, ret);
     }
-    if (ret == MESSAGELENGTH)
-        return 0;
+    //if (ret == MESSAGELENGTH)
+        //return 0;
 
     return WSAGetLastError();
 
