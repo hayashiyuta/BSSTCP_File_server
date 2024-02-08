@@ -3,6 +3,7 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include<fstream>
+#include<sys/types.h>
 
 #pragma comment( lib, "ws2_32.lib" )
 
@@ -165,16 +166,6 @@ int Accept()
 // 文字列送信
 int Recv(int sock, char* buff)
 {
-   // std::ofstream receivedImage(buff, std::ios::binary);
-    //int byteread;
-    //int ret = recv(sock, buff, MESSAGELENGTH, 0);
-
-    //while ((byteread = ret) > 0)
-    //{
-    //    receivedImage.write(buff, byteread);
-    //}
-    
-    
     //int ret = recv(sock, buff, MESSAGELENGTH, 0);//文字受け取るだけ
     std::ofstream receivedfile(buff, std::ios::binary);
     int ret = recv(sock, buff, MESSAGELENGTH, 0);//テキストファイル
