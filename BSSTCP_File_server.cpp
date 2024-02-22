@@ -4,6 +4,7 @@
 #include <WS2tcpip.h>
 #include<fstream>
 #include<sys/types.h>
+using namespace std;
 
 #pragma comment( lib, "ws2_32.lib" )
 
@@ -16,6 +17,8 @@ const unsigned int MESSAGELENGTH = 1024;
 // リスンソケット ... クラス化してメンバー変数にしたいなー
 int listenSock;
 int fd;
+const int text = 1;
+const int file = 2;
 
 // クライアントとの通信用ソケットvector ... クラス化してメンバー変数にしたいなー
 std::vector<int> socks;	// 靴下っぽい
@@ -27,6 +30,7 @@ bool Bind(unsigned short port);
 bool Listen(int backlog);
 int Accept();
 int Recv(int sock, char* buff);
+int Recvfile(int sock, char* buff);
 bool Exit();
 
 int main()
@@ -59,7 +63,10 @@ int main()
     std::cout << "Success: Listen()" << std::endl;
 
     
-
+    int len = 0;
+    std::cout << "---Text chat or receive files---" << std::endl;
+    std::cout << "Text : 1, File : 2" << std::endl;
+    std::cin >> len;
     while (true)
     {
         int ret = Accept();
@@ -71,32 +78,79 @@ int main()
         {
             std::cout << "Error: Accept()" << std::endl;
         }
-
-        // recv
-        for (auto sock : socks)
+        
+        if (len == text)
         {
-            char buff[MESSAGELENGTH];
-            memset(buff, 0, sizeof(buff));
-            
-            ret = Recv(sock, buff);
-            
-            if (ret < 0)
+            // recv
+            for (auto sock : socks)
             {
-                
-                std::cout << "buff = " << buff << std::endl;
-            }
-            else if (ret != WSAEWOULDBLOCK)
-            {
-                std::cout << "Error: Recv()" << std::endl;
-            }
-            //buff[ret] = '\0';
+                char buff[MESSAGELENGTH];
+                ret = Recv(sock, buff);
+                //memset(buff, 0, sizeof(buff));
+                /*while (true)//すべてのデータを受信するまでrecvし続ける
+                {
 
+                    //buff[ret] = '\0';
+                    len += ret;
+                }*/
+
+
+                if (ret == 0)
+                {
+                    std::cout << "buff = " << buff << std::endl;
+                }
+                else if (ret != WSAEWOULDBLOCK)
+                {
+                    std::cout << "Error: Recv()" << std::endl;
+                }              
+            }
         }
+        else if (len == file)
+        {
+            // recvfile
+            for (auto sock : socks)
+            {
+                char buff[MESSAGELENGTH];
+                
+                //memset(buff, 0, sizeof(buff));
+                while (true)//すべてのデータを受信するまでrecvし続ける
+                {
+                    ret = Recv(sock, buff);
+                    //buff[ret] = '\0';
+                    len += ret;
+                }
+
+
+                if (ret == 0)
+                {
+                    ifstream ifs(buff);
+                    if (!ifs.bad())
+                    {
+                        std::cout << "buff = " << ifs.rdbuf() << std::endl;//テキストファイルの中身を書き出す
+                        ifs.close();
+                    }
+
+                }
+                else if (ret != WSAEWOULDBLOCK)
+                {
+                    std::cout << "Error: Recv()" << std::endl;
+                }
+                //buff[ret] = '\0';
+
+            }
+        }
+        else 
+        {
+            std::cout << "Error: Untargeted input" << std::endl;
+            Exit();
+            std::cout << "Success: Exit()" << std::endl;
+            return 0;
+        }
+        
     }
 
     Exit();
     std::cout << "Success: Exit()" << std::endl;
-
     return 0;
 }
 
@@ -166,19 +220,23 @@ int Accept()
 // 文字列送信
 int Recv(int sock, char* buff)
 {
-    //int ret = recv(sock, buff, MESSAGELENGTH, 0);//文字受け取るだけ
+    int ret = recv(sock, buff, MESSAGELENGTH, 0);//文字受け取るだけ
+    
+    if (ret == MESSAGELENGTH)
+        return 0;
+
+    return WSAGetLastError();
+}
+
+int Recvfile(int sock, char* buff)
+{
     std::ofstream receivedfile(buff, std::ios::binary);
-    int ret = recv(sock, buff, MESSAGELENGTH, 0);//テキストファイル
+    int ret = recv(sock, buff, sizeof(buff) - 1, 0);//テキストファイル
     while (ret > 0)
     {
         receivedfile.write(buff, ret);
     }
-    //if (ret == MESSAGELENGTH)
-        //return 0;
-
     return WSAGetLastError();
-
-
 }
 
 // 終了処理
